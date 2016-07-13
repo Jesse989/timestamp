@@ -1,33 +1,38 @@
 'use strict';
+var http = require('http');
+var port = 8080;
+var returnDate = require("./return")
+var returnUnix = require("./returnUnix")
+var isUnix = true;
+var server = http.createServer();
 
-var express = require('express');
-var routes = require('./app/routes/index.js');
-var mongoose = require('mongoose');
-var passport = require('passport');
-var session = require('express-session');
-
-var app = express();
-require('dotenv').load();
-require('./app/config/passport')(passport);
-
-mongoose.connect(process.env.MONGO_URI);
-
-app.use('/controllers', express.static(process.cwd() + '/app/controllers'));
-app.use('/public', express.static(process.cwd() + '/public'));
-app.use('/common', express.static(process.cwd() + '/app/common'));
-
-app.use(session({
-	secret: 'secretClementine',
-	resave: false,
-	saveUninitialized: true
-}));
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-routes(app, passport);
-
-var port = process.env.PORT || 8080;
-app.listen(port,  function () {
-	console.log('Node.js listening on port ' + port + '...');
+server.on('request', function(req, res){
+  var url = req.url;
+  var query = require('url').parse(url, true);
+  var path = query.path;
+  var output = path.substring(1, path.length).replace(/%20/g, "");
+  
+  for(var i in output){
+    if(output.charCodeAt(i) > 57){
+      isUnix = false;
+    }
+  }
+  
+  console.log(isUnix);
+  if(isUnix){
+    res.write(JSON.stringify(returnUnix(output))); 
+    res.end();
+    
+  }else{
+    res.write(JSON.stringify(returnDate(output))); 
+    res.end();
+    isUnix = true;
+  }
 });
+
+server.listen(8080);
+
+
+
+
+
